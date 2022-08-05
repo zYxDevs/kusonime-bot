@@ -7,9 +7,10 @@ from KusonimeBot.util import Kusonime, Storage
 @TelegramBot.on_message(filters.text)
 async def messageHandler(_, msg : Message):
     text = msg.text
-    test = re.match(r"((https|http)://kusonime\.com/[\w\d\-]+/?)", text, (re.I))
-    if test:
-        url = test.group(1)
+    if test := re.match(
+        r"((https|http)://kusonime\.com/[\w\d\-]+/?)", text, (re.I)
+    ):
+        url = test[1]
         init_url = Storage.get(url.lower(), None)
         if init_url != None:
             ph = init_url.get('ph_url')
@@ -21,8 +22,7 @@ async def messageHandler(_, msg : Message):
             Storage[url.lower()] = dict(ph_url = tgraph['url'])
         return
     if msg.chat.type == "private":
-        keyboard = []
-        keyboard.append(Button('Click me', switch_inline_query = "anime_title"))
+        keyboard = [Button('Click me', switch_inline_query = "anime_title")]
         reply_markup = InlineKeyboard([keyboard])
         await msg.reply("Send me kusonime link to get download link, you can search kusonime in my inline", quote = True, reply_markup = reply_markup)
         return

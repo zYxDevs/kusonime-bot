@@ -9,13 +9,13 @@ async def InlineQueryHandler(_, iq : InlineQuery):
         return
     querys = await Kusonime.search(q)
     if not querys['error']:
-        results = []
-        for x in querys['results']:
-            results.append(
-                atr(title = x['title'], 
-                input_message_content = append_text(
-                    message_text = x['url']
-                ), 
-                thumb_url = x['thumb'])
+        results = [
+            atr(
+                title=x['title'],
+                input_message_content=append_text(message_text=x['url']),
+                thumb_url=x['thumb'],
             )
+            for x in querys['results']
+        ]
+
         return await iq.answer(results)

@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup as bs4
 from telegraph import Telegraph
 
 telegraph = Telegraph(os.environ.get('PH_TOKEN', None))
-if telegraph.get_access_token() == None:
+if telegraph.get_access_token() is None:
     token_ph = telegraph.create_account(short_name = "KusonimeBot")
     print("Membuat akun telegraph baru dengan token :", token_ph.get('access_token'))
 
@@ -15,7 +15,7 @@ headers = {
 }
 
 async def kusonimeSearch(query : str):
-    hasil = dict()
+    hasil = {}
     request = ClientSession(headers = headers)
     api = "https://kusonime.com/"
     params = dict(post_type = "post", s = query)
@@ -43,7 +43,7 @@ async def kusonimeSearch(query : str):
         return hasil
 
 async def kusonimeBypass(url : str, slug = None):
-    hasil = dict()
+    hasil = {}
     ini_url = url
     request = ClientSession(headers = headers)
     if slug:
@@ -56,15 +56,14 @@ async def kusonimeBypass(url : str, slug = None):
         thumb = soup.find('div', { 'class' : 'post-thumb' }).find('img').get('src')
         data = []
         title = soup.select('#venkonten > div.vezone > div.venser > div.venutama > div.lexot > p:nth-child(3) > strong')[0].text.strip()
-        num = 1
         genre = []
         for cari_genre in soup.select('#venkonten > div.vezone > div.venser > div.venutama > div.lexot > div.info > p:nth-child(2)'):
             gen = cari_genre.text.split(':').pop().strip().split(', ')
             genre = gen
         status_anime = soup.select('#venkonten > div.vezone > div.venser > div.venutama > div.lexot > div.info > p:nth-child(6)')[0].text.split(':').pop().strip()
-        for smokedl in soup.find('div', { 'class' : 'dlbod' }).find_all('div', { 'class' : 'smokeddl' }):
+        for num, smokedl in enumerate(soup.find('div', { 'class' : 'dlbod' }).find_all('div', { 'class' : 'smokeddl' }), start=1):
             titl = soup.select(f'#venkonten > div.vezone > div.venser > div.venutama > div.lexot > div.dlbod > div:nth-child({num}) > div.smokettl')[0].text
-            titl = re.sub(f'Download', '', titl).strip()
+            titl = re.sub('Download', '', titl).strip()
             mendata = dict(name = titl, links = [])
             for smokeurl in smokedl.find_all('div', {  'class' : 'smokeurl' }):
                 quality = smokeurl.find('strong').text
@@ -75,7 +74,6 @@ async def kusonimeBypass(url : str, slug = None):
                     links.append({ 'client' : client, 'url' : url })
                 mendata['links'].append(dict(quality = quality, link_download = links))
             data.append(mendata)
-            num += 1
         hasil.update(error = False, title = title, thumb = thumb, genre = genre, genre_string = ", ".join(genre), status_anime = status_anime, data = data)
     except:
         hasil.update(error = True, error_message = "Telah terjadi error tidak diketahui")
@@ -86,7 +84,8 @@ async def kusonimeBypass(url : str, slug = None):
 async def byPassPh(url : str, msg_id = "123"):
     kusonime = await kusonimeBypass(url)
     results = dict(error = True, error_message = "Telah terjadi error tidak diketahui")
-    template = """
+    if not kusonime['error']:
+        template = """
 <img src={{{thumb}}}>
 
 <p><b>Title</b> : {{title}}</p>
@@ -104,13 +103,12 @@ async def byPassPh(url : str, msg_id = "123"):
     <br>
 {{/data}}
 """.strip()
-    if not kusonime['error']:
         html = chevron.render(template, kusonime)
         page = telegraph.create_page(
             f"{kusonime.get('title')}-{msg_id}",
             html_content = html
         )
-        results.update(error = False, url = 'https://telegra.ph/{}'.format(page['path']))
+        results.update(error = False, url=f"https://telegra.ph/{page['path']}")
         del results['error_message']
     return results
 
